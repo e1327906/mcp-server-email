@@ -94,7 +94,7 @@ async def send_email(attachment_folder, email_message: EmailMessage):
             if smtp_port == 465:
                 server = smtplib.SMTP_SSL(smtp_server, smtp_port)
             else:
-                server.starttls()  # 启用 TLS 加密
+                server.starttls()  
             server.login(sender, password)  # Using application-specific passwords
             server.sendmail(sender, email_message.receiver, message.as_string())
         return f"Email sent successfully from sender: {sender}"
@@ -161,7 +161,7 @@ async def search_attachments(directory: str, pattern: str,
     # 规范化目录路径
     root_dir = os.path.abspath(os.path.expanduser(directory))
     if not os.path.exists(root_dir):
-        raise ValueError(f"目录不存在: {directory}")
+        raise ValueError(f"directory no exists: {directory}")
 
     matches = set()
     pattern = pattern.lower() if ignore_case else pattern
