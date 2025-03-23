@@ -1,6 +1,11 @@
 # MCP Email Server
 
 A Model Context Protocol server that provides email functionality. This server enables LLMs to compose and send emails, as well as search for attachments within specified directories.
+![1742711978001](https://github.com/user-attachments/assets/be934453-cd63-4865-85fb-5251689943ef)
+
+
+![1742712768132](https://github.com/user-attachments/assets/4ffbc9cf-5a59-4c9c-8fca-b2b61e667464)
+
 
 ## Features
 
