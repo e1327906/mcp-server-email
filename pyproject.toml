@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.scripts]
-mcp-server-git = "mcp_server_email:main"
+mcp-server-email = "mcp_server_email:main"
 
 [build-system]
 requires = ["hatchling"]
