@@ -146,7 +146,7 @@ def get_lack_params(arguments: dict) -> str | None:
 
 
 async def search_attachments(directory: str, pattern: str,
-                             ignore_case: bool = True) -> Set[str]:
+                             ignore_case: bool = True) -> str:
     """
     Searches for file paths matching the specified pattern in the specified directory.
 
