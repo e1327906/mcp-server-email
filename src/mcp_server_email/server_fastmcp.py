@@ -92,18 +92,34 @@ async def send_email(email_message: EmailMessage):
                 raise ValueError(f"{absolute_path} not exists")
 
     try:
-        # create SMTP server
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.ehlo()  # Send a greeting command to the server
-            if smtp_port == 465:
-                server = smtplib.SMTP_SSL(smtp_server, smtp_port)
-            else:
-                server.starttls()
-            server.login(sender, password)  # Using application-specific passwords
-            server.sendmail(sender, email_message.receiver, message.as_string())
-        return f"Email sent successfully from sender: {sender}"
+        # Choose correct SMTP class based on port
+        smtp_class = smtplib.SMTP_SSL if smtp_port == 465 else smtplib.SMTP
+        
+        # Create SMTP connection with timeout
+        with smtp_class(smtp_server, smtp_port, timeout=10) as server:
+            if smtp_port != 465:
+                server.starttls()  # Enable TLS for non-SSL connections
+            
+            # Login and send
+            server.login(sender, password)
+            server.send_message(email_message)
+            
+        return f"Email sent successfully from {sender}"
+
+    except smtplib.SMTPAuthenticationError:
+        raise ValueError("Authentication failed - check username and password")
+    
+    except smtplib.SMTPServerDisconnected:
+        raise ConnectionError("Server disconnected unexpectedly")
+    
+    except smtplib.SMTPException as e:
+        raise smtplib.SMTPException(f"SMTP error occurred: {str(e)}")
+    
+    except TimeoutError:
+        raise ConnectionError("Connection timed out")
+    
     except Exception as e:
-        raise ValueError(str(e))
+        raise Exception(f"Unexpected error: {str(e)}")
 
 
 
