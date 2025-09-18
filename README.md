@@ -177,3 +177,18 @@ Pull requests are welcome! Feel free to contribute new ideas, bug fixes, or enha
 ## License
 
 MCP Email Server is licensed under the MIT License. This means you are free to use, modify, and distribute the software, subject to the terms and conditions of the MIT License.
+
+
+## Usage MCP in vs code
+"email": {
+			"command": "python",
+			"args": [
+				"D:/Projects/AI/mcp-server-email/src/mcp_server_email",
+				"--dir",
+				"D:/Projects/AI/mcp-server-email"
+			],
+			"env": {
+				"SENDER": "2593666979q@gmail.com",
+				"PASSWORD": "tuogk......."
+			}
+		}

@@ -1,3 +1,6 @@
+import imaplib
+from email.header import decode_header
+from email import message_from_bytes
 import os
 import json
 import logging
@@ -45,6 +48,45 @@ class EmailMessage(BaseModel):
 class EmailTools(str, Enum):
     SEND_EMAIL = "send_email"
     SEARCH_ATTACHMENTS = "search_attachments"
+    READ_INBOX = "read_inbox"
+
+def read_inbox(max_emails: int = 10) -> list[dict]:
+    """Read emails from the inbox using IMAP. Returns a list of email summaries."""
+    # Try to infer IMAP server from sender domain
+    domain = sender.split('@')[1].lower()
+    imap_server = None
+    # Common IMAP servers
+    if "gmail" in domain:
+        imap_server = "imap.gmail.com"
+    elif "outlook" in domain or "hotmail" in domain or "live" in domain:
+        imap_server = "imap-mail.outlook.com"
+    elif "yahoo" in domain:
+        imap_server = "imap.mail.yahoo.com"
+    elif "msi-global.com.sg" in domain:
+        imap_server = "outlook.office365.com"
+    # Add more domains as needed
+    if not imap_server:
+        raise ValueError(f"IMAP server for domain {domain} not supported. Please add manually.")
+
+    mail = imaplib.IMAP4_SSL(imap_server)
+    mail.login(sender, password)
+    mail.select("inbox")
+    status, messages = mail.search(None, "ALL")
+    email_ids = messages[0].split()
+    emails = []
+    for eid in email_ids[-max_emails:]:
+        status, msg_data = mail.fetch(eid, "(RFC822)")
+        for response_part in msg_data:
+            if isinstance(response_part, tuple):
+                msg = message_from_bytes(response_part[1])
+                subject, encoding = decode_header(msg.get("Subject"))[0]
+                if isinstance(subject, bytes):
+                    subject = subject.decode(encoding or "utf-8", errors="ignore")
+                from_ = msg.get("From")
+                date_ = msg.get("Date")
+                emails.append({"from": from_, "subject": subject, "date": date_})
+    mail.logout()
+    return emails
 
 
 async def send_email(attachment_folder, email_message: EmailMessage):
@@ -98,7 +140,7 @@ async def send_email(attachment_folder, email_message: EmailMessage):
             
             # Login and send
             server.login(sender, password)
-            server.send_message(email_message)
+            server.send_message(message)
             
         return f"Email sent successfully from {sender}"
 
@@ -263,6 +305,20 @@ async def serve(attachment_folder) -> None:
                     },
                     "required": ["pattern"],
                 }
+            ),
+            Tool(
+                name="read_inbox",
+                description="""Reads emails from the inbox using IMAP and returns a list of recent email summaries.""",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "max_emails": {
+                            "type": "integer",
+                            "description": "Maximum number of emails to fetch (default: 10)",
+                        }
+                    },
+                    "required": [],
+                }
             )
         ]
 
@@ -331,6 +387,14 @@ async def serve(attachment_folder) -> None:
                 try:
                     search_response = await search_attachments(attachment_folder, **arguments)
                     return [TextContent(type="text", text=f"Search attachments response: \n{search_response}")]
+                except Exception as e:
+                    raise McpError(ErrorData(code=INTERNAL_ERROR, message=str(e)))
+            case EmailTools.READ_INBOX:
+                try:
+                    max_emails = arguments.get("max_emails", 10)
+                    emails = read_inbox(max_emails)
+                    summary = "\n".join([f"From: {e['from']}, Subject: {e['subject']}, Date: {e['date']}" for e in emails])
+                    return [TextContent(type="text", text=f"Inbox summary:\n{summary}")]
                 except Exception as e:
                     raise McpError(ErrorData(code=INTERNAL_ERROR, message=str(e)))
             case _:
